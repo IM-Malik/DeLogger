@@ -1,0 +1,24 @@
+services:
+  frontend:
+    image: delogger-frontend
+    ports:
+      - 80
+    restart: on-failure:3
+    depends_on: 
+      - backend
+
+  backend:
+    image: delogger-backend
+    ports:
+      - 8001
+    restart: on-failure:3
+
+  db:
+    image: postgres
+    ports: 
+      - 5432:5432
+    restart: on-failure:3
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB_NAME}

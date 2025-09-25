@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Log Parser</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c;
+            color: #e2e8f0;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+
+<body class="p-4 sm:p-8 flex items-center justify-center min-h-screen">
+    <div class="bg-gray-800 p-6 sm:p-10 rounded-xl shadow-2xl w-full max-w-4xl space-y-6">
+        <div class="text-center">
+            <h1 class="text-3xl sm:text-4xl font-bold text-white mb-2">Log Parser</h1>
+            <p class="text-gray-400">Paste your log text below and parse it into JSON format.</p>
+        </div>
+
+        <div class="space-y-2">
+            <label for="logInput" class="block text-sm font-medium text-gray-300">Log Text</label>
+            <textarea id="logInput" rows="10"
+                class="w-full p-3 bg-gray-700 text-gray-200 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                placeholder="Example:
+[2023-10-27 10:05:12] [INFO] User logged in successfully.
+[2023-10-27 10:05:15] [ERROR] Failed to connect to database.
+[2023-10-27 10:05:20] [DEBUG] Processing request for endpoint /api/data."></textarea>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-4">
+            <button id="parseButton"
+                class="w-full sm:w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 shadow-md">
+                Parse Log
+            </button>
+            <button id="copyButton"
+                class="w-full sm:w-1/2 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 shadow-md">
+                Copy JSON to Clipboard
+            </button>
+        </div>
+
+        <div class="space-y-2">
+            <label class="block text-sm font-medium text-gray-300">Parsed JSON</label>
+            <div id="outputContainer"
+                class="relative bg-gray-900 p-4 rounded-lg overflow-x-auto border border-gray-700 shadow-inner min-h-[200px]">
+                <pre><code id="jsonOutput" class="text-sm"></code></pre>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const logInput = document.getElementById('logInput');
+            const parseButton = document.getElementById('parseButton');
+            const jsonOutput = document.getElementById('jsonOutput');
+            const copyButton = document.getElementById('copyButton');
+
+            // The URL now points to the path that Nginx will proxy to the backend
+            async function parseLog() {
+                const logText = logInput.value;
+                if (!logText.trim()) {
+                    jsonOutput.textContent = 'No log data to parse.';
+                    return;
+                }
+
+                jsonOutput.textContent = 'Parsing...';
+
+                try {
+                    const response = await fetch('/api/parse', { // New endpoint for Nginx proxy
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'text/plain'
+                        },
+                        body: logText
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const parsedData = await response.json();
+                    jsonOutput.textContent = JSON.stringify(parsedData, null, 2);
+
+                } catch (error) {
+                    console.error('Error:', error);
+                    jsonOutput.textContent = `Error: Failed to connect to the backend server via Nginx proxy. (${error.message})`;
+                }
+            }
+
+            // Function to copy the JSON output to the clipboard (unchanged)
+            function copyToClipboard() {
+                const textToCopy = jsonOutput.textContent;
+                if (!textToCopy || textToCopy.includes('Error:')) {
+                    return;
+                }
+                const tempTextArea = document.createElement('textarea');
+                tempTextArea.value = textToCopy;
+                document.body.appendChild(tempTextArea);
+                tempTextArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempTextArea);
+
+                copyButton.textContent = 'Copied!';
+                setTimeout(() => {
+                    copyButton.textContent = 'Copy JSON to Clipboard';
+                }, 2000);
+            }
+
+            // Event listeners
+            parseButton.addEventListener('click', parseLog);
+            copyButton.addEventListener('click', copyToClipboard);
+        });
+    </script>
+</body>
+
+</html>
