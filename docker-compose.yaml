@@ -1,14 +1,16 @@
 services:
   frontend:
-    image: delogger-frontend
+    image: ghcr.io/im-malik/delogger-frontend:v1.0
     ports:
       - 80
     restart: on-failure:3
     depends_on: 
       - backend
+    volumes:
+      - /var/log/delogger/nginx:/var/log/nginx
 
   backend:
-    image: delogger-backend
+    image: ghcr.io/im-malik/delogger-backend:v1.0
     ports:
       - 8001
     restart: on-failure:3
@@ -22,3 +24,5 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB_NAME}
+    volumes:
+      - /var/log/delogger/db:/var/lib/postgresql/data
