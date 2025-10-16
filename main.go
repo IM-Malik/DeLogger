@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -27,7 +26,7 @@ type LogRecord struct {
 	Timestamp    time.Time       `json:"timestamp"`
 	RemoteAddr   string          `json:"remote_addr"`
 	RequestBody  string          `json:"request_body"`
-	ResponseBody json.RawMessage `json:"response_body"` // Use RawMessage to save as JSONB
+	ResponseBody json.RawMessage `json:"response_body"`
 	StatusCode   int             `json:"status_code"`
 	ErrorMsg     string          `json:"error_msg"`
 }
@@ -39,14 +38,7 @@ func setupDatabase() {
 	var err error
 	
 	// Read connection parameters from environment variables
-	connStr := fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
-		os.Getenv("POSTGRES_USER"), // User
-		os.Getenv("POSTGRES_PASSWORD"), // Password
-		"db", // Hostname (the Docker Compose service name)
-		5432, // Port
-		os.Getenv("POSTGRES_DB_NAME"), // Database name
-	)
+	connStr := os.Getenv("DATABASE_URL")
 
 	// Use context for database setup
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -187,8 +179,8 @@ func main() {
 	setupDatabase()
 	
 	log.Println("Starting Go log parser backend...")
-	log.Println("Backend service available at port 8001.")
+	log.Println("Backend service available at port 8007.")
 
 	http.HandleFunc("/api/parse", parseHandler)
-	log.Fatal(http.ListenAndServe(":8001", nil))
+	log.Fatal(http.ListenAndServe(":8007", nil))
 }
